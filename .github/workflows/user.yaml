@@ -18,7 +18,7 @@ on:
 jobs:
   payment:
     name: Build and deploy user microservice
-    runs-on: [self-hosted]  # Use a standard runner instead of self-hosted
+    runs-on: ubuntu-latest  # Use a standard runner instead of self-hosted
 
     steps:
       - name: Checkout code 
@@ -29,14 +29,15 @@ jobs:
       - name: NPM install
         run: npm install 
 
-      - name: Build Docker image
-        run: |
-          docker build -t user .  # Build image tagged as 'payment' from current directory
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Docker Login (use secrets)
-        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to the Azure 
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Login to the azure container registry
+        run: az acr login --name ${{ secrets.ACR_NAME}}
 
-      - name: Docker Push
-        run: |
-          docker tag user ${name}/user:latest
-          docker user ${name}/user:latest
+      - name: Build and push Docker image
+        run: docker buildx build --platform linux/arm64 -t ${{ secrets.ACR_NAME }}.azurecr.io/user:latest --push ./user

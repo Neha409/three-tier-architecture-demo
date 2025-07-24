@@ -18,7 +18,7 @@ on:
 jobs:
   payment:
     name: Build and deploy dispatch microservice
-    runs-on: [self-hosted]  # Use a standard runner instead of self-hosted
+    runs-on: ubuntu-latest  # Use a standard runner instead of self-hosted
 
     steps:
       - name: Checkout code 
@@ -28,17 +28,18 @@ jobs:
 
       - name:  Go install
         run: |
-            curl -sL https://dl.google.com/go/go1.18.linux-amd64.tar.gz |
+            curl -sL https://dl.google.com/go/go1.21.9.linux-arm64.tar.gz |
             export PATH=$PATH:/home/runner/go/bin
 
-      - name: Build Docker image
-        run: |
-          docker build -t payment .  # Build image tagged as 'payment' from current directory
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Docker Login (use secrets)
-        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to the Azure 
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Login to the azure container registry
+        run: az acr login --name ${{ secrets.ACR_NAME}}
 
-      - name: Docker Push
-        run: |
-          docker tag dispatch ${name}/dispatch:latest
-          docker push ${name}/dispatch:latest
+      - name: Build and push Docker image
+        run: docker buildx build --platform linux/arm64 -t ${{ secrets.ACR_NAME }}.azurecr.io/dispatch:latest --push ./dispatch
