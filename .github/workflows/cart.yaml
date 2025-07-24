@@ -1,6 +1,7 @@
 name: Cart
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
