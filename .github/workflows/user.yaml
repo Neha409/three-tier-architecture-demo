@@ -28,7 +28,9 @@ jobs:
           fetch-depth: 0
 
       - name: NPM install
-        run: npm install 
+        run: npm install
+        with:
+          working-directory: ./user
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
